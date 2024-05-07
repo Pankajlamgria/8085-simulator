@@ -1,0 +1,1 @@
+register_name={'A':0,'Temp':1,'Instruction':2,'B':3,'C':4,'D':5,'E':6,'H':7,'L':8,'M':(7,8)}
