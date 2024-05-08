@@ -41,28 +41,71 @@ class processor_8085:
     # Constructor Initializing memory
     def __init__(self):
         self.memory=bytearray(2**16)
+        self.stack_Memory=bytearray(2**16)
         self.status=bit()
         #TODO set and get function for register
         self.register=bytearray(9)  #All the 6 general purpose register + 1 Accumulator + 1 temp register + 1 instruction register  
         
         self.stack_Pointer=bytearray(2)
+        self.stack_Pointer[0],self.stack_Pointer[1]=int('ff',16),int("ff",16)
         self.address_Bus=bytearray(2)
         self.data_Bus=bytearray(1)
 
         self.bitObject=bitManipulation()
 
-    def set_Stack_Pointer(self,address):
-        pass                   #TODO declare stack 
     def get_Stack_Pointer(self):
-        pass 
+        bitval=self.stack_Pointer[0]<<8
+        bitval|=self.stack_Pointer[1]
+        return int(bitval)
+    
+    def set_stack_pointer(self,address):
+        if(type(address)==str):
+            address=int(address,16)
+        lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(address)
+        self.stack_Pointer[0]=upperBit
+        self.stack_Pointer[1]=lowerBit
+
+    def push_Stack_Pointer(self,address):
+        if(type(address)==str):
+            address=int(address,16)
+        lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(address)
+        stack_top=self.get_Stack_Pointer()
+        stack_top-=1
+        if(stack_top>0):
+            self.stack_Memory[stack_top]=upperBit
+            stack_top-=1
+            self.stack_Memory[stack_top]=lowerBit
+            self.set_stack_pointer(stack_top)
+        else:
+            print("Stack is full")
+            print("Segmentation fault")
+    def pop_Stack_Pointer(self):
+        top=self.get_Stack_Pointer()
+        if(top==0xffff):
+            print("Empty stack")
+        else:
+            lower=self.stack_Memory[top]
+            top+=1
+            upper=self.stack_Memory[top]
+            top+=1
+            self.set_stack_pointer(top)
+            return upper<<8|lower
+
+
+
+        
+       
     def get_address_Bus(self):
-        bitval=self.address_Bus[1]<<8
-        bitval|=self.address_Bus[0]
+        bitval=self.address_Bus[0]<<8
+        bitval|=self.address_Bus[1]
         return int(bitval)
     def set_address_Bus(self,address):
-        address=int(address,16)
+        if(type(address)==str):
+            address=int(address,16)
         lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(address)
-        self.address_Bus[0],self.address_Bus[1]=lowerBit,upperBit
+
+        # {0,1}={upperBit,lowerBit}
+        self.address_Bus[1],self.address_Bus[0]=lowerBit,upperBit
     
     def set_data_Bus(self,data):
         if(type(data)==str):
@@ -125,6 +168,13 @@ class processor_8085:
 # %Testing
 
 obj= processor_8085()
+# obj.push_Stack_Pointer("ffff")
+# obj.push_Stack_Pointer("001a")
+# obj.push_Stack_Pointer("fffa")
+# print(obj.pop_Stack_Pointer())
+# print(obj.pop_Stack_Pointer())
+# print(obj.pop_Stack_Pointer())
+# print(obj.pop_Stack_Pointer())
 # obj.set_address_Bus("000a")
 # print(obj.get_address_Bus())
 # obj.set_data_Bus(255)
