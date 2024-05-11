@@ -43,15 +43,35 @@ class processor_8085:
         self.memory=bytearray(2**16)
         self.stack_Memory=bytearray(2**16)
         self.status=bit()
-        #TODO set and get function for register
         self.register=bytearray(9)  #All the 6 general purpose register + 1 Accumulator + 1 temp register + 1 instruction register  
-        
+        self.program_Counter=bytearray(2)
+
+
         self.stack_Pointer=bytearray(2)
         self.stack_Pointer[0],self.stack_Pointer[1]=int('ff',16),int("ff",16)
         self.address_Bus=bytearray(2)
         self.data_Bus=bytearray(1)
 
         self.bitObject=bitManipulation()
+    def to_insert_hexaDecimal_Memory(self,add,data):
+        if(type(add)==str):
+            add=int(add,16)
+        data=int(data,16)
+        lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(data)
+        self.memory[add]=lowerBit
+        add+=1
+        self.memory[add]=upperBit
+    
+    def set_program_Counter(self,address):
+        if(type(address)==str):
+            address=int(address,16)
+        lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(address)
+        self.program_Counter[0]=upperBit
+        self.program_Counter[1]=lowerBit
+    def get_program_Counter(self):
+        bitval=self.program_Counter[0]<<8
+        bitval|=self.program_Counter[1]
+        return int(bitval)
 
     def get_Stack_Pointer(self):
         bitval=self.stack_Pointer[0]<<8
@@ -155,35 +175,15 @@ class processor_8085:
         else:
             print("Invalid Register Pair assigned")
         return upper<<8|lower
-
+    def insert_data_memory(self,data,add):
+        if(type(data)==str):
+            data=int(data,16)
+        self.memory[add]=data
+    def get_data_memeory(self,add):
+        return self.memory[add]
+        
     
     
 
     
     
-
-
-
-
-# %Testing
-
-obj= processor_8085()
-# obj.push_Stack_Pointer("ffff")
-# obj.push_Stack_Pointer("001a")
-# obj.push_Stack_Pointer("fffa")
-# print(obj.pop_Stack_Pointer())
-# print(obj.pop_Stack_Pointer())
-# print(obj.pop_Stack_Pointer())
-# print(obj.pop_Stack_Pointer())
-# obj.set_address_Bus("000a")
-# print(obj.get_address_Bus())
-# obj.set_data_Bus(255)
-# print(obj.get_data_Bus())
-# obj.setAccumulator(255)
-# print(obj.getAccumulator())
-# obj.set_data_Bus('f')
-# print(obj.get_data_Bus())
-# obj.set_Register_Pair("M","ffff")
-# print(obj.get_Register_Pair("H"))
-# obj.set_Register('A',"CA")
-# print(obj.get_Register('A'))
