@@ -2,6 +2,7 @@ register_index={'A':0,'Temp':1,'Instruction':2,'B':3,'C':4,'D':5,'E':6,'H':7,'L'
 # TODO Create all instructions oppcode and the bytes of instruction to store
 register={"000":'B','001':'C','010':'D','011':'E','100':'H','101':'L','110':'M','111':'A'}
 register_pairs={"00":'B','01':'D','10':'H','11':'S'}
+status_index={'Z':6,'S':7,'C':0,'P':2,'AC':4}
 
 oppcode = {
     'ACI': 'CE', 'ADC A': '8F', 'ADC B': '88', 'ADC C': '89', 'ADC D': '8A', 'ADC E': '8B', 'ADC H': '8C', 'ADC L': '8D', 'ADC M': '8E', 

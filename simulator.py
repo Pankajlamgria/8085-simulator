@@ -1,5 +1,6 @@
 from dict import *
 class bit:
+    # status bit =[]
     def __init__(self):
         self.array=bytearray(1) 
         self.size=8
