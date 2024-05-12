@@ -56,7 +56,8 @@ class processor_8085:
     def to_insert_hexaDecimal_Memory(self,add,data):
         if(type(add)==str):
             add=int(add,16)
-        data=int(data,16)
+        if(type(data)==str):
+            data=int(data,16)
         lowerBit,upperBit=self.bitObject.get_Lower_And_Upper(data)
         self.memory[add]=lowerBit
         add+=1
@@ -140,9 +141,9 @@ class processor_8085:
     def set_Register(self,Reg,data):
         if(type(data)==str):
             data=int(data,16)
-        self.register[register_name[Reg]]=data
+        self.register[register_index[Reg]]=data
     def get_Register(self,Reg):
-        return self.register[register_name[Reg]]
+        return self.register[register_index[Reg]]
     
     # Pairs
     def set_Register_Pair(self,Register,data):
