@@ -136,12 +136,23 @@ class processor_8085:
     
     def get_data_Bus(self):
         return self.data_Bus[0]
-
+    
+    def twos_comp(self,val,bit):
+        s=str(bin(val)[2:]).zfill(bit)
+        s=''.join(reversed(s))
+        ans=0
+        for i in range(0,len(s),1):
+            if(s[i]=='0'):
+                ans+=(2**i)
+        return ans+1
+        
 
     # REGISTERS FUNCTIONS
     def set_Register(self,Reg,data):
         if(type(data)==str):
             data=int(data,16)
+        if(data<0):
+            data=self.twos_comp(-data,8)
         self.register[register_index[Reg]]=data
     def get_Register(self,Reg):
         return self.register[register_index[Reg]]

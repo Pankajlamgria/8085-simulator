@@ -39,7 +39,7 @@ oppcode = {
     'XRA A': 'AF', 'XRA B': 'A8', 'XRA C': 'A9', 'XRA D': 'AA', 'XRA E': 'AB', 'XRA H': 'AC', 'XRA L': 'AD', 'XRA M': 'AE', 
     'XRI': 'EE'}
 
-instruction_byte={"ACI":2,"ADC":1,"ADD":1,"ADI":2,"ANA":1,'ANI':2,'CALL':3,'CC':3,'CM':3,'CMC':1,'CMA':1,'CMP':1,'CNC':3,'CNZ':3,"CP":3,'CPE':3,'CPI':2,'CPO':3,'CZ':3,'DAA':1,'DAD':1,'DCR':1,'DCX':1,'INR':1,'INX':1,'JC':3,'JM':3,'JMP':3,'JNC':3,'JNZ':3,'JP':3,'JPE':3,'JPO':3,'JZ':3,'LDA':3,'LDAX':1,'LHLD':3,'LXI':3,'MOV':1,'MVI':2,'NOP':1,'ORA':1,'POP':1,'PUSH':1,'RAL':1,'RAR':1,'RC':1,'RET':1,'RIM':1,'RLC':1,'RM':1,'RNC':1,'RNZ':1,'RRC':1,'SBB':1,'SHLD':3,'SBI':2,'STA':3,'STAX':1,'SUB':1,'HLT':1}
+instruction_byte={"ACI":2,"ADC":1,"ADD":1,"ADI":2,"ANA":1,'ANI':2,'CALL':3,'CC':3,'CM':3,'CMC':1,'CMA':1,'CMP':1,'CNC':3,'CNZ':3,"CP":3,'CPE':3,'CPI':2,'CPO':3,'CZ':3,'DAA':1,'DAD':1,'DCR':1,'DCX':1,'INR':1,'INX':1,'JC':3,'JM':3,'JMP':3,'JNC':3,'JNZ':3,'JP':3,'JPE':3,'JPO':3,'JZ':3,'LDA':3,'LDAX':1,'LHLD':3,'LXI':3,'MOV':1,'MVI':2,'NOP':1,'ORA':1,'POP':1,'PUSH':1,'RAL':1,'RAR':1,'RC':1,'RET':1,'RIM':1,'RLC':1,'RM':1,'RNC':1,'RNZ':1,'RRC':1,'SBB':1,'SHLD':3,'SBI':2,'STA':3,'STAX':1,'SUB':1,'SBB':1,'SBI':2,'HLT':1,'XCHG':1,'XRA':1,'SUI':2}
     
 swapped_opcode = {
     'CE': 'ACI', '8F': 'ADC A', '88': 'ADC B', '89': 'ADC C', '8A': 'ADC D', '8B': 'ADC E', '8C': 'ADC H', '8D': 'ADC L', '8E': 'ADC M', 

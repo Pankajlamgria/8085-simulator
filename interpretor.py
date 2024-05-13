@@ -8,6 +8,7 @@ class interpretor:
         self.simulatorObj.set_program_Counter(add)
 
     def decode_insert(self,instruction):
+        instruction=instruction.upper()
         mnemonics=instruction.split()[0]
         pc=self.simulatorObj.get_program_Counter()
 
@@ -23,7 +24,11 @@ class interpretor:
                 code=inst_arr[0]+" "+inst_arr[1]
                 self.simulatorObj.memory[pc]=int(oppcode[code],16)
                 pc+=1
-                self.simulatorObj.memory[pc]=int(inst_arr[2],16)
+                value=int(inst_arr[2],16)
+                if(value<0):
+                    value=self.twos_comp(value,8)
+                value%=(2**8)
+                self.simulatorObj.memory[pc]=value
                 pc+=1
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
@@ -53,6 +58,13 @@ class interpretor:
                 pc+=2
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
+            elif(inst_arr[0]=='SBI' or inst_arr[0]=='XRI'):
+                self.simulatorObj.memory[pc]=int(oppcode[inst_arr[0]],16)
+                pc+=1
+                self.simulatorObj.memory[pc]=int(inst_arr[1],16)
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+                return pc
             elif(inst_arr[0]=='SHLD' or inst_arr[0]=='STA'):
                 self.simulatorObj.memory[pc]=int(oppcode[inst_arr[0]],16)
                 pc+=1
@@ -69,13 +81,9 @@ class interpretor:
                 return pc
     def find_Command(self,data):
         data=data.zfill(2)
-        print(data)
         instruction=swapped_opcode[data]
         instruction=instruction.split()
         return instruction[0]
-
-
-
     # For MOV Command
     def executeMOV(self,int_Code):
         binNumber=str(bin(int_Code)[2:])
@@ -213,6 +221,8 @@ class interpretor:
             reg_val=self.simulatorObj.register[register_index[regCode]]
             self.simulatorObj.register[register_index['A']]&=reg_val
             self.handleUpdateStatus(self.simulatorObj.register[register_index['A']])
+        self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.status.clear_bit(status_index['AC'])
     def executeCMA(self,int_data):
         acc_Data=self.simulatorObj.register[register_index['A']]
         self.simulatorObj.register[register_index['A']]=acc_Data^255
@@ -286,10 +296,6 @@ class interpretor:
         else:
             self.simulatorObj.status.clear_bit(status_index['C'])
         self.simulatorObj.set_Register_Pair('H',res)
-        self.simulatorObj.status.clear_bit(status_index['Z'])
-        self.simulatorObj.status.clear_bit(status_index['S'])
-        self.simulatorObj.status.clear_bit(status_index['P'])
-        self.simulatorObj.status.clear_bit(status_index['AC'])
 
 
     def updateAuxCarry(self,n1,n2,bit):
@@ -299,16 +305,16 @@ class interpretor:
         else:
             self.simulatorObj.status.clear_bit(status_index['AC'])
     def updateFlag(self,data,bit):
-        if(data>=(2**8)):
+        if(data>=(2**bit)):
             self.simulatorObj.status.set_bit(status_index['C'])
-            data%=(2**8)
+            data%=(2**bit)
         else:
             self.simulatorObj.status.clear_bit(status_index['C'])
         if(data==0):
             self.simulatorObj.status.set_bit(status_index['Z'])
         else:
             self.simulatorObj.status.clear_bit(status_index['Z'])
-        binNumber=str(bin(data)[2:])
+        binNumber=str(bin(data)[2:]).zfill(bit)
         if(binNumber[0]=='1'):
             self.simulatorObj.status.set_bit(status_index['S'])
         else:
@@ -323,47 +329,276 @@ class interpretor:
             self.simulatorObj.status.clear_bit(status_index['P'])
 
 
-    def add(self,first,second):
-        lowerNibble1,lowerNibble2=first&15,second&15
+    def add(self,first,second,bit):
+        lowerNibble1,lowerNibble2=first&(int)(2**(bit/2)-1),second&(int)(2**(bit/2)-1)
         res=first+second
-        self.updateAuxCarry(lowerNibble1,lowerNibble2,4)
+        self.updateAuxCarry(lowerNibble1,lowerNibble2,bit/2)
         self.updateFlag(res,bit)
-        return res&255
+        return res&(2**bit-1)
 
     def twos_comp(self,val,bit):
         s=str(bin(val)[2:]).zfill(bit)
         s=''.join(reversed(s))
-        print(s)
         ans=0
         for i in range(0,len(s),1):
             if(s[i]=='0'):
                 ans+=(2**i)
         return ans+1
         
-    def sub(self,val1,val2):
-        two_Comp=self.twos_comp(val2,8)
-        two_Comp%=256
-        print("Two",two_Comp)
-        res=self.add(val1,two_Comp)
+    def sub(self,val1,val2,bit):
+        two_Comp=self.twos_comp(val2,bit)
+        two_Comp%=(2**bit)
+        res=self.add(val1,two_Comp,bit)
         if(val2>val1):
             self.simulatorObj.status.set_bit(status_index['C'])
         else:
             self.simulatorObj.status.clear_bit(status_index['C'])
         return res
-
+    
+    def subWithoutStatus(self,val1,val2,bit):
+        two_Comp=self.twos_comp(val2,bit)
+        two_Comp%=(2**bit)
+        res=(val1+two_Comp)&(2**bit-1)
+        return res
+    
     def executeDCR(self,int_Code):
         binNumber=str(bin(int_Code)[2:]).zfill(8)
         regCode=binNumber[2:5:1]
-        # print(binNumber)
-        print("REgCode:",regCode)
+        regCode=register[regCode]
+        oldCarry=self.simulatorObj.status.get_bit(status_index['C'])
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            reg_val=self.simulatorObj.memory[add]
+            self.simulatorObj.memory[add]=self.sub(reg_val,1,8)
+        else:
+            reg_val=self.simulatorObj.register[register_index[regCode]]
+            self.simulatorObj.register[register_index[regCode]]=self.sub(reg_val,1,8)
+        if(oldCarry==1):
+            self.simulatorObj.status.set_bit(status_index['C'])
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+            
+    def executeDCX(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:4:1]
+        regName=register_pairs[regCode]
+        if(regName!='SP'):
+            regValue=self.simulatorObj.get_Register_Pair(regName)
+            # this is a 16bit data
+            res_val=self.subWithoutStatus(regValue,1,16)
+            self.simulatorObj.set_Register_Pair(regName,res_val)
+    def executeINR(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:5:1]
+        regCode=register[regCode]
+        oldCarry=self.simulatorObj.status.get_bit(status_index['C'])
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            reg_val=self.simulatorObj.memory[add]
+            res=self.add(reg_val,1,8)
+            self.simulatorObj.memory[add]=res
+        else:
+            reg_val=self.simulatorObj.register[register_index[regCode]]
+            res=self.add(reg_val,1,8)
+            self.simulatorObj.register[register_index[regCode]]=res
+        if(oldCarry==1):
+            self.simulatorObj.status.set_bit(status_index['C'])
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+    def executeINX(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:4:1]
+        regName=register_pairs[regCode]
+        if(regName!='SP'):
+            regValue=self.simulatorObj.get_Register_Pair(regName)
+            # this is a 16bit data
+            res_val=(regValue+1)&(2**16-1)
+            self.simulatorObj.set_Register_Pair(regName,res_val)
+
+    def executeORA(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[-3::1]
         regCode=register[regCode]
         if(regCode=='M'):
             add=self.simulatorObj.get_Register_Pair('H')
             reg_val=self.simulatorObj.memory[add]
-            self.simulatorObj.memory[add]=self.sub(reg_val,1)
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=reg_val|acc_val
+            self.simulatorObj.register[register_index['A']]=acc_val
         else:
             reg_val=self.simulatorObj.register[register_index[regCode]]
-            self.simulatorObj.register[register_index[regCode]]=self.sub(reg_val,1)
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=reg_val|acc_val
+            self.simulatorObj.register[register_index['A']]=acc_val
+        self.updateFlag(self.simulatorObj.register[register_index['A']],8)
+        self.simulatorObj.status.clear_bit(status_index['AC'])
+        self.simulatorObj.status.clear_bit(status_index['C'])
+    def executeRLC(self,int_Code):
+        acc_val=self.simulatorObj.register[register_index['A']]
+        binNumber=str(bin(acc_val)[2:]).zfill(8)
+        acc_val<<=1
+        acc_val%=(2**8)
+        if(binNumber[0]=='1'):
+            self.simulatorObj.status.set_bit(status_index['C'])
+            acc_val+=1
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeRRC(self,int_Code):
+        acc_val=self.simulatorObj.register[register_index['A']]
+        binNumber=str(bin(acc_val)[2:]).zfill(8)
+        acc_val>>=1
+        if(binNumber[7]=='1'):
+            self.simulatorObj.status.set_bit(status_index['C'])
+            acc_val|=(1<<7)
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeRAL(self,int_Code):
+        acc_val=self.simulatorObj.register[register_index['A']]
+        binNumber=str(bin(acc_val)[2:]).zfill(8)
+        acc_val<<=1
+        if(self.simulatorObj.status.get_bit(status_index['C'])==1):
+            acc_val+=1
+        if(binNumber[0]=='1'):
+            self.simulatorObj.status.set_bit(status_index['C'])
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+        acc_val%=(2**8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeRAR(self,int_Code):
+        acc_val=self.simulatorObj.register[register_index['A']]
+        binNumber=str(bin(acc_val)[2:]).zfill(8)
+        acc_val>>=1
+        if(self.simulatorObj.status.get_bit(status_index['C'])==1):
+            acc_val|=(1<<7)
+        if(binNumber[7]=='1'):
+            self.simulatorObj.status.set_bit(status_index['C'])
+        else:
+            self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeSUB(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[-3::1]
+        regCode=register[regCode]
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            reg_val=self.simulatorObj.memory[add]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=self.sub(acc_val,reg_val,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+        else:
+            reg_val=self.simulatorObj.register[register_index[regCode]]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=self.sub(acc_val,reg_val,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+    def executeSBB(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[-3::1]
+        regCode=register[regCode]
+        oldBorrow=self.simulatorObj.status.get_bit(status_index['C'])
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            reg_val=self.simulatorObj.memory[add]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=self.sub(acc_val,reg_val,8)
+            if(oldBorrow==1):
+                acc_val=self.sub(acc_val,1,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+        else:
+            reg_val=self.simulatorObj.register[register_index[regCode]]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val=self.sub(acc_val,reg_val,8)
+            if(oldBorrow==1):
+                acc_val=self.sub(acc_val,1,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+    def executeXCHG(self,int_Code):
+        HLVal=self.simulatorObj.get_Register_Pair("H")
+        DEVal=self.simulatorObj.get_Register_Pair("D")
+        self.simulatorObj.set_Register_Pair('H',DEVal)
+        self.simulatorObj.set_Register_Pair('D',HLVal)
+    def executeXRA(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[-3::1]
+        regCode=register[regCode]
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            reg_val=self.simulatorObj.memory[add]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val^=reg_val
+            self.updateFlag(acc_val,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+        else:
+            reg_val=self.simulatorObj.register[register_index[regCode]]
+            acc_val=self.simulatorObj.register[register_index['A']]
+            acc_val^=reg_val
+            self.updateFlag(acc_val,8)
+            self.simulatorObj.register[register_index['A']]=acc_val
+
+        self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.status.clear_bit(status_index['AC'])
+    
+    def executeMVI(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:5:1]
+        regCode=register[regCode]
+        program_Counter=self.simulatorObj.get_program_Counter()
+        program_Counter+=1
+        value=self.simulatorObj.memory[program_Counter]
+        if(regCode=='M'):
+            add=self.simulatorObj.get_Register_Pair('H')
+            self.simulatorObj.memory[add]=value
+        else:
+            self.simulatorObj.register[register_index[regCode]]=value
+    def executeADI(self,int_Code):
+        program_Counter=self.simulatorObj.get_program_Counter()
+        program_Counter+=1
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_Counter]
+        res=self.add(acc_val,value,8)
+        self.simulatorObj.register[register_index['A']]=res
+    def executeANI(self,program_Counter):
+        program_Counter+=1
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_Counter]    
+        acc_val&=value
+        self.updateFlag(acc_val,8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+        self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.status.clear_bit(status_index['AC'])
+    def executeORI(self,program_Counter):
+        program_Counter+=1
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_Counter]    
+        acc_val|=value
+        self.updateFlag(acc_val,8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+        self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.status.clear_bit(status_index['AC'])
+    def executeSBI(self,program_counter):
+        program_counter+=1
+        oldBorrow=self.simulatorObj.status.get_bit(status_index['C']) 
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_counter]    
+        acc_val=self.sub(acc_val,value,8)
+        if(oldBorrow==1):
+            acc_val=self.sub(acc_val,1,8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeSUI(self,program_counter):
+        program_counter+=1
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_counter]    
+        acc_val=self.sub(acc_val,value,8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+    def executeXRI(self,program_Counter):
+        program_Counter+=1
+        acc_val=self.simulatorObj.register[register_index['A']]
+        value=self.simulatorObj.memory[program_Counter]    
+        acc_val^=value
+        self.updateFlag(acc_val,8)
+        self.simulatorObj.register[register_index['A']]=acc_val
+        self.simulatorObj.status.clear_bit(status_index['C'])
+        self.simulatorObj.status.clear_bit(status_index['AC'])
 
     #RUNNING THE CODE 
     def execute_Code(self):
@@ -411,8 +646,84 @@ class interpretor:
                 self.executeDCR(self.simulatorObj.memory[pc])
                 pc+=1
                 self.simulatorObj.set_program_Counter(pc)
-
-
+            elif(command_type=='DCX'):
+                self.executeDCX(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='INR'):
+                self.executeINR(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='INX'):
+                self.executeINX(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='ORA'):
+                self.executeORA(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='RLC'):
+                self.executeRLC(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='RRC'):
+                self.executeRRC(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='RAL'):
+                self.executeRAL(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            
+            elif(command_type=='RAR'):
+                self.executeRAR(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='SUB'):
+                self.executeSUB(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif (command_type=='SBB'):
+                self.executeSBB(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='XCHG'):
+                self.executeXCHG(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='XRA'):
+                self.executeXRA(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='MVI'):
+                self.executeMVI(self.simulatorObj.memory[pc])
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            
+            elif(command_type=='ADI'):
+                self.executeADI(self.simulatorObj.memory[pc])
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='ANI'):
+                self.executeANI(pc)
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='ORI'):
+                self.executeORI(pc)
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='SBI'):
+                self.executeSBI(pc)
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='SUI'):
+                self.executeSUI(pc)
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='XRI'):
+                self.executeXRI(pc)
+                pc+=2
+                self.simulatorObj.set_program_Counter(pc)
 
 
 
@@ -422,13 +733,20 @@ class interpretor:
 obj=interpretor()
 # obj.simulatorObj.register[register_index['A']]=34
 obj.simulatorObj.set_Register_Pair('H','2000')
+obj.simulatorObj.set_Register_Pair('D','FFFF')
+
 obj.simulatorObj.memory[int("2000",16)]=7
 # s=["MOV C, A",'MOV B, C',"MOV B, M",'HLT']
-obj.simulatorObj.register[register_index['A']]=0
-obj.simulatorObj.register[register_index['B']]=8
+obj.simulatorObj.register[register_index['A']]=255
+obj.simulatorObj.register[register_index['C']]=2
+# obj.simulatorObj.set_Register_Pair('B',-1)
 
-obj.simulatorObj.status.set_bit(status_index['C'])
-s=['CMP M','DCR A','HLT']
+obj.simulatorObj.status.set_bit(status_index['C'])  
+obj.simulatorObj.status.set_bit(status_index['AC'])
+obj.simulatorObj.status.set_bit(status_index['S'])
+obj.simulatorObj.status.set_bit(status_index['P'])
+# s=["DCR B","INR B","INR M",'HLT']
+s=["MVI A, 03","MVI B, 02","XRI 05",'HLT']
 
 obj.starting_address(4000)
 
@@ -437,13 +755,19 @@ for i in s:
 obj.starting_address(4000)
 print("running code")
 obj.execute_Code()
-print(obj.simulatorObj.register[register_index['A']])
-print(obj.simulatorObj.register[register_index['B']])
-print("Zero:",obj.simulatorObj.status.get_bit(status_index['Z']))
-print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']))
-print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']))
-print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']))
+print("\nAccumulator:",obj.simulatorObj.register[register_index['A']],end=" ,")
+print("B Register:",obj.simulatorObj.register[register_index['B']],end=" ,")
+print("C Register:",obj.simulatorObj.register[register_index['C']],end=' ,')
+print("D Register:",obj.simulatorObj.register[register_index['D']],end=' ,')
+print("E Register:",obj.simulatorObj.register[register_index['E']],end=' ,')
+print("H Register:",obj.simulatorObj.register[register_index['H']],end=' ,')
+print("L Register:",obj.simulatorObj.register[register_index['L']],)
+print("\nZero:",obj.simulatorObj.status.get_bit(status_index['Z']),end=' ,')
+print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']),end=' ,')
+print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']),end=' ,')
+print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']),end=' ,')
 print("AUXILARY CARRY:",obj.simulatorObj.status.get_bit(status_index['AC']))
-print(obj.simulatorObj.register[register_index['B']])
-print(obj.simulatorObj.memory[int("2000",16)])
-# print(obj.simulatorObj.register[register_index['B']])
+print("\nBC register Pair:",hex(obj.simulatorObj.get_Register_Pair('B')),end=" ,")
+print("DE register Pair:",hex(obj.simulatorObj.get_Register_Pair('D')),end=" ,")
+print("HL register Pair:",hex(obj.simulatorObj.get_Register_Pair('H')))
+print("\nData int  memeory(HL):",obj.simulatorObj.memory[obj.simulatorObj.get_Register_Pair('H')])
