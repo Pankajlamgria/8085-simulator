@@ -5,9 +5,15 @@ class interpretor:
         self.simulatorObj=processor_8085()
 
     def starting_address(self,add):
+        if(type(add)==str):
+            add=int(add,16)
         self.simulatorObj.set_program_Counter(add)
 
     def decode_insert(self,instruction):
+        if(',' in instruction):
+            ind=instruction.find(',')
+            if(instruction[ind+1]!=' '):
+                instruction=instruction[:ind+1]+' '+instruction[ind+1:]
         instruction=instruction.upper()
         mnemonics=instruction.split()[0]
         pc=self.simulatorObj.get_program_Counter()
@@ -54,7 +60,8 @@ class interpretor:
                 code=inst_arr[0]+' '+inst_arr[1]
                 self.simulatorObj.memory[pc]=int(oppcode[code],16)
                 pc+=1
-                self.simulatorObj.to_insert_hexaDecimal_Memory(pc,int(inst_arr[2]))
+
+                self.simulatorObj.to_insert_hexaDecimal_Memory(pc,int(inst_arr[2],16))
                 pc+=2
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
@@ -68,7 +75,7 @@ class interpretor:
             elif(inst_arr[0]=='SHLD' or inst_arr[0]=='STA'):
                 self.simulatorObj.memory[pc]=int(oppcode[inst_arr[0]],16)
                 pc+=1
-                self.simulatorObj.to_insert_hexaDecimal_Memory(pc,int(inst_arr[1]))
+                self.simulatorObj.to_insert_hexaDecimal_Memory(pc,int(inst_arr[1],16))
                 pc+=2
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
@@ -79,6 +86,13 @@ class interpretor:
                 pc+=1
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
+            
+    def extract_add(self,pc):
+
+        lower=self.simulatorObj.memory[pc]
+        pc+=1
+        upper=self.simulatorObj.memory[pc]
+        return upper<<8|lower
     def find_Command(self,data):
         data=data.zfill(2)
         instruction=swapped_opcode[data]
@@ -86,7 +100,7 @@ class interpretor:
         return instruction[0]
     # For MOV Command
     def executeMOV(self,int_Code):
-        binNumber=str(bin(int_Code)[2:])
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
         source=binNumber[-3::1]
         destination=binNumber[-6:-3:1]
         sourceReg,desReg=register[source],register[destination]
@@ -100,7 +114,7 @@ class interpretor:
         else:    
             self.simulatorObj.register[register_index[desReg]]=self.simulatorObj.register[register_index[sourceReg]]
     
-    def addFunc(self,a,b):
+    # def addFunc(self,a,b):
         # data is integer
         lower_nibble1,lower_nibble2=a&15,b&15
         upper_nibble1,upper_nibble2=a>>4,b>>4
@@ -158,7 +172,8 @@ class interpretor:
             if(self.simulatorObj.status.get_bit(status_index['C'])):
                 reg_val+=1
             acc_val=self.simulatorObj.register[register_index['A']]
-            res=self.addFunc(acc_val,reg_val)
+            # res=self.addFunc(acc_val,reg_val)
+            res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
         else:
@@ -166,7 +181,8 @@ class interpretor:
             if(self.simulatorObj.status.get_bit(status_index['C'])):
                 reg_val+=1
             acc_val=self.simulatorObj.register[register_index['A']]
-            res=self.addFunc(acc_val,reg_val)
+            # res=self.addFunc(acc_val,reg_val)
+            res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
     # ADDITION
     def executeADD(self,int_Code):
@@ -177,13 +193,15 @@ class interpretor:
             add=self.simulatorObj.get_Register_Pair('H')
             reg_val=self.simulatorObj.memory[add]
             acc_val=self.simulatorObj.register[register_index['A']]
-            res=self.addFunc(acc_val,reg_val)
+            # res=self.addFunc(acc_val,reg_val)
+            res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
         else:
             reg_val=self.simulatorObj.register[register_index[regCode]]
             acc_val=self.simulatorObj.register[register_index['A']]
-            res=self.addFunc(acc_val,reg_val)
+            # res=self.addFunc(acc_val,reg_val)
+            res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
     def handleUpdateStatus(self,data):
@@ -257,11 +275,6 @@ class interpretor:
         else:
             self.simulatorObj.status.clear_bit(status_index['AC'])
 
-            
-
-
-
-
     def executeCMP(self,int_Code):
         binNumber=str(bin(int_Code)[2:])
         regCode=binNumber[-3::1]
@@ -270,11 +283,13 @@ class interpretor:
             add=self.simulatorObj.get_Register_Pair('H')
             reg_val=self.simulatorObj.memory[add]
             acc_val=self.simulatorObj.register[register_index['A']]
-            self.compare(reg_val,acc_val)
+            # self.compare(reg_val,acc_val)
+            self.sub(acc_val,reg_val,8)
         else:
             reg_val=self.simulatorObj.register[register_index[regCode]]
             acc_val=self.simulatorObj.register[register_index['A']]
-            self.compare(reg_val,acc_val)
+            # self.compare(reg_val,acc_val)
+            self.sub(acc_val,reg_val,8)
     def executeDAD(self,int_Code):
         regCode=''
         if(int_Code==9):
@@ -599,11 +614,65 @@ class interpretor:
         self.simulatorObj.register[register_index['A']]=acc_val
         self.simulatorObj.status.clear_bit(status_index['C'])
         self.simulatorObj.status.clear_bit(status_index['AC'])
+    def executeJump(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=jump_status[binNumber[2:5:1]]
+        pc=self.simulatorObj.get_program_Counter()
+        add=self.extract_add(pc+1)
+        if(regCode=='NZ' and self.simulatorObj.status.get_bit(status_index['Z'])==0):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='Z' and self.simulatorObj.status.get_bit(status_index['Z'])==1):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='NC' and self.simulatorObj.status.get_bit(status_index['C'])==0):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='C' and self.simulatorObj.status.get_bit(status_index['C'])==1):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='PO' and self.simulatorObj.status.get_bit(status_index['P'])==0):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='PE' and self.simulatorObj.status.get_bit(status_index['P'])==1):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='P' and self.simulatorObj.status.get_bit(status_index['S'])==0):
+            self.simulatorObj.set_program_Counter(add)
+        elif(regCode=='M' and self.simulatorObj.status.get_bit(status_index['S'])==1):
+            self.simulatorObj.set_program_Counter(add)
+        else:
+            self.simulatorObj.set_program_Counter(pc+3)
+    def executeLDA(self,pc):
+        pc+=1
+        add=self.extract_add(pc)
+        self.simulatorObj.register[register_index['A']]=self.simulatorObj.memory[add]
+    def executeLHLD(self,pc):
+        pc+=1
+        self.simulatorObj.register[register_index['L']]=self.simulatorObj.memory[pc]
+        pc+=1
+        self.simulatorObj.register[register_index['H']]=self.simulatorObj.memory[pc]
+    def executeLXI(self,pc):
+        int_Code=self.simulatorObj.memory[pc]
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        pc+=1
+        regCode=binNumber[2:4:1]
+        regCode=register_pairs[regCode]
+        add=self.extract_add(pc)
+        self.simulatorObj.set_Register_Pair(regCode,add)
+    def executeSHLD(self,pc):
+        pc+=1
+        add=self.extract_add(pc)
+        l=self.simulatorObj.get_Register('L')
+        print("DATa of L:",l)
+        self.simulatorObj.memory[add]=l
+        add+=1
+        h=self.simulatorObj.get_Register('H')
+        self.simulatorObj.memory[add]=h
+    def executeSTA(self,pc):
+        pc+=1
+        add=self.extract_add(pc)
+        acc_data=self.simulatorObj.register[register_index['A']]
+        self.simulatorObj.memory[add]=acc_data
 
     #RUNNING THE CODE 
     def execute_Code(self):
         pc=self.simulatorObj.get_program_Counter()
-        while(self.simulatorObj.memory[pc]!=int("76",16) and self.simulatorObj.memory[pc+1]!=0):
+        while((self.simulatorObj.memory[pc]!=int("76",16)  and self.simulatorObj.memory[pc]!=0)):
             hexaData=hex(self.simulatorObj.memory[pc])[2:]
             hexaData=hexaData.upper()
             command_type=self.find_Command(hexaData)
@@ -724,50 +793,73 @@ class interpretor:
                 self.executeXRI(pc)
                 pc+=2
                 self.simulatorObj.set_program_Counter(pc)
+           
+            elif(command_type=='JZ' or command_type=='JNZ' or command_type=='JC' or command_type=='JM' or command_type=='JMP' or command_type=='JNC' or command_type=='JP' or command_type=='JPE' or command_type=='JPO'):
+                self.executeJump(self.simulatorObj.memory[pc])
+            elif(command_type=='LDA'):
+                self.executeLDA(pc)
+                pc+=3
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='LHLD'):
+                self.executeLHLD(pc)
+                pc+=3
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='LXI'):
+                self.executeLXI(pc) 
+                pc+=3
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='SHLD'):
+                self.executeSHLD(pc)
+                pc+=3
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='STA'):
+                self.executeSTA(pc)
+                pc+=3
+                self.simulatorObj.set_program_Counter(pc)
+            
+            pc=self.simulatorObj.get_program_Counter()
+
 
 
 
 
 
 # TESTING AREA
+
 obj=interpretor()
-# obj.simulatorObj.register[register_index['A']]=34
-obj.simulatorObj.set_Register_Pair('H','2000')
-obj.simulatorObj.set_Register_Pair('D','FFFF')
+try:
+    obj.simulatorObj.status.set_bit(status_index['C'])  
+    # obj.simulatorObj.status.set_bit(status_index['AC'])
+    # obj.simulatorObj.status.set_bit(status_index['S'])
+    # obj.simulatorObj.status.set_bit(status_index['P'])
+    s=['MVI A, 23','MVI B,FE','CMP B','HLT']
 
-obj.simulatorObj.memory[int("2000",16)]=7
-# s=["MOV C, A",'MOV B, C',"MOV B, M",'HLT']
-obj.simulatorObj.register[register_index['A']]=255
-obj.simulatorObj.register[register_index['C']]=2
-# obj.simulatorObj.set_Register_Pair('B',-1)
+    obj.starting_address("4000")
 
-obj.simulatorObj.status.set_bit(status_index['C'])  
-obj.simulatorObj.status.set_bit(status_index['AC'])
-obj.simulatorObj.status.set_bit(status_index['S'])
-obj.simulatorObj.status.set_bit(status_index['P'])
-# s=["DCR B","INR B","INR M",'HLT']
-s=["MVI A, 03","MVI B, 02","XRI 05",'HLT']
+    for i in s:
+        (obj.decode_insert(i))
+    obj.starting_address("4000")
+    print("running code")
+    obj.execute_Code()
+    print("\nAccumulator:",obj.simulatorObj.register[register_index['A']],end=" ,")
+    print("B Register:",obj.simulatorObj.register[register_index['B']],end=" ,")
+    print("C Register:",obj.simulatorObj.register[register_index['C']],end=' ,')
+    print("D Register:",obj.simulatorObj.register[register_index['D']],end=' ,')
+    print("E Register:",obj.simulatorObj.register[register_index['E']],end=' ,')
+    print("H Register:",obj.simulatorObj.register[register_index['H']],end=' ,')
+    print("L Register:",obj.simulatorObj.register[register_index['L']],)
+    print("\nZero:",obj.simulatorObj.status.get_bit(status_index['Z']),end=' ,')
+    print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']),end=' ,')
+    print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']),end=' ,')
+    print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']),end=' ,')
+    print("AUXILARY CARRY:",obj.simulatorObj.status.get_bit(status_index['AC']))
+    print("\nBC register Pair:",hex(obj.simulatorObj.get_Register_Pair('B')),end=" ,")
+    print("DE register Pair:",hex(obj.simulatorObj.get_Register_Pair('D')),end=" ,")
+    print("HL register Pair:",hex(obj.simulatorObj.get_Register_Pair('H')))
+    print("\nData int  memeory(HL):",obj.simulatorObj.memory[obj.simulatorObj.get_Register_Pair('H')])
+    print("\nprogram counter:",hex(obj.simulatorObj.get_program_Counter()))
+    print("DATA",obj.simulatorObj.memory[obj.simulatorObj.get_program_Counter()])
 
-obj.starting_address(4000)
-
-for i in s:
-    (obj.decode_insert(i))
-obj.starting_address(4000)
-print("running code")
-obj.execute_Code()
-print("\nAccumulator:",obj.simulatorObj.register[register_index['A']],end=" ,")
-print("B Register:",obj.simulatorObj.register[register_index['B']],end=" ,")
-print("C Register:",obj.simulatorObj.register[register_index['C']],end=' ,')
-print("D Register:",obj.simulatorObj.register[register_index['D']],end=' ,')
-print("E Register:",obj.simulatorObj.register[register_index['E']],end=' ,')
-print("H Register:",obj.simulatorObj.register[register_index['H']],end=' ,')
-print("L Register:",obj.simulatorObj.register[register_index['L']],)
-print("\nZero:",obj.simulatorObj.status.get_bit(status_index['Z']),end=' ,')
-print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']),end=' ,')
-print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']),end=' ,')
-print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']),end=' ,')
-print("AUXILARY CARRY:",obj.simulatorObj.status.get_bit(status_index['AC']))
-print("\nBC register Pair:",hex(obj.simulatorObj.get_Register_Pair('B')),end=" ,")
-print("DE register Pair:",hex(obj.simulatorObj.get_Register_Pair('D')),end=" ,")
-print("HL register Pair:",hex(obj.simulatorObj.get_Register_Pair('H')))
-print("\nData int  memeory(HL):",obj.simulatorObj.memory[obj.simulatorObj.get_Register_Pair('H')])
+    print("\ndata at 2000",obj.simulatorObj.memory[int("2000",16)])
+except:
+    print("<---------------------------INVALID CODE PLEASE WRITE THE CORRECT CODE---------------------------->")
