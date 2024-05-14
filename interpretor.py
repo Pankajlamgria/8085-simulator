@@ -114,56 +114,9 @@ class interpretor:
         else:    
             self.simulatorObj.register[register_index[desReg]]=self.simulatorObj.register[register_index[sourceReg]]
     
-    # def addFunc(self,a,b):
-        # data is integer
-        lower_nibble1,lower_nibble2=a&15,b&15
-        upper_nibble1,upper_nibble2=a>>4,b>>4
-        lower_res=lower_nibble1+lower_nibble2
-        carry=0
-        if(lower_res/16>=1):
-            self.simulatorObj.status.set_bit(status_index['AC'])
-            lower_res%=16
-            carry=1
-        else:
-            self.simulatorObj.status.clear_bit(status_index['AC'])
-        upper_res=upper_nibble1+upper_nibble2+carry
-        if(upper_res/16>=1):
-            self.simulatorObj.status.set_bit(status_index['C'])
-            upper_res%=16
-        else:
-            self.simulatorObj.status.clear_bit(status_index['C'])
-        
-        if(upper_res&1<<3==8):
-            self.simulatorObj.status.set_bit(status_index['S'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['S'])
-        
-        lowerHex=hex(lower_res)[2:]
-        upperHex=hex(upper_res)[2:]
-        res=upperHex+lowerHex
-        res=res.upper()
-        res=int(res,16)
-        if(res==0):
-            self.simulatorObj.status.set_bit(status_index['Z'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['Z'])
-        binNumber=str(bin(res)[2:])
-        oneCount=0
-        for i in binNumber:
-            if(i=='1'):
-                oneCount+=1
-
-
-        if(oneCount%2==0):
-            self.simulatorObj.status.set_bit(status_index['P'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['P'])
-        
-        return res
-    
     # ADDITION WITH CARRY
     def executeADC(self,int_Code):
-        binNumber=str(bin(int_Code)[2:])
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
         regCode=binNumber[-3::1]
         regCode=register[regCode]
         if(regCode=='M'):
@@ -172,7 +125,6 @@ class interpretor:
             if(self.simulatorObj.status.get_bit(status_index['C'])):
                 reg_val+=1
             acc_val=self.simulatorObj.register[register_index['A']]
-            # res=self.addFunc(acc_val,reg_val)
             res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
@@ -181,31 +133,28 @@ class interpretor:
             if(self.simulatorObj.status.get_bit(status_index['C'])):
                 reg_val+=1
             acc_val=self.simulatorObj.register[register_index['A']]
-            # res=self.addFunc(acc_val,reg_val)
             res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
     # ADDITION
     def executeADD(self,int_Code):
-        binNumber=str(bin(int_Code)[2:])
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
         regCode=binNumber[-3::1]
         regCode=register[regCode]
         if(regCode=='M'):
             add=self.simulatorObj.get_Register_Pair('H')
             reg_val=self.simulatorObj.memory[add]
             acc_val=self.simulatorObj.register[register_index['A']]
-            # res=self.addFunc(acc_val,reg_val)
             res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
         else:
             reg_val=self.simulatorObj.register[register_index[regCode]]
             acc_val=self.simulatorObj.register[register_index['A']]
-            # res=self.addFunc(acc_val,reg_val)
             res=self.add(acc_val,reg_val,8)
             self.simulatorObj.register[register_index['A']]=res
 
     def handleUpdateStatus(self,data):
-        binNumber=str(bin(data)[2:])
+        binNumber=str(bin(data)[2:]).zfill(8)
         self.simulatorObj.status.clear_bit(status_index['AC'])
         self.simulatorObj.status.clear_bit(status_index['C'])
         oneCount=0
@@ -227,7 +176,7 @@ class interpretor:
             
     # BITWISE AND
     def executeANA(self,int_Code):
-        binNumber=str(bin(int_Code)[2:])
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
         regCode=binNumber[-3::1]
         regCode=register[regCode]
         if(regCode=='M'):
@@ -244,64 +193,23 @@ class interpretor:
     def executeCMA(self,int_data):
         acc_Data=self.simulatorObj.register[register_index['A']]
         self.simulatorObj.register[register_index['A']]=acc_Data^255
-
-    def compare(self,regData,accData):
-        res=accData-regData
-        regLowerNibble,accLowerNibble=regData&15,accData&15
-        if(regData>accData):
-            self.simulatorObj.status.set_bit(status_index['S'])
-            self.simulatorObj.status.set_bit(status_index['C'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['S'])
-            self.simulatorObj.status.clear_bit(status_index['C'])
-        if(res==0):
-            self.simulatorObj.status.set_bit(status_index['Z'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['Z'])
-        if(regData>accData):
-            res=str(bin(res)[3:])
-        else:
-            res=str(bin(res)[2:])
-        oneCount=0
-        for i in res:
-            if(i=='1'):
-                oneCount+=1
-        if(oneCount%2==0):
-            self.simulatorObj.status.set_bit(status_index['P'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['P'])
-        if(regLowerNibble>accLowerNibble):
-            self.simulatorObj.status.set_bit(status_index['AC'])
-        else:
-            self.simulatorObj.status.clear_bit(status_index['AC'])
-
     def executeCMP(self,int_Code):
-        binNumber=str(bin(int_Code)[2:])
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
         regCode=binNumber[-3::1]
         regCode=register[regCode]
         if(regCode=='M'):
             add=self.simulatorObj.get_Register_Pair('H')
             reg_val=self.simulatorObj.memory[add]
             acc_val=self.simulatorObj.register[register_index['A']]
-            # self.compare(reg_val,acc_val)
             self.sub(acc_val,reg_val,8)
         else:
             reg_val=self.simulatorObj.register[register_index[regCode]]
             acc_val=self.simulatorObj.register[register_index['A']]
-            # self.compare(reg_val,acc_val)
             self.sub(acc_val,reg_val,8)
     def executeDAD(self,int_Code):
-        regCode=''
-        if(int_Code==9):
-            regCode='B'
-        elif(int_Code==25):
-            regCode=='D'
-        elif(int_Code=='41'):
-            regCode='H'
-        elif(int_Code=='57'):
-            regCode='H'
-        else:
-            print("incorect register")
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:4:1]
+        regCode=register_pairs[regCode]
         hl_data=self.simulatorObj.get_Register_Pair('H')
         reg_data=self.simulatorObj.get_Register_Pair(regCode)
         res=hl_data+reg_data
@@ -832,7 +740,7 @@ try:
     # obj.simulatorObj.status.set_bit(status_index['AC'])
     # obj.simulatorObj.status.set_bit(status_index['S'])
     # obj.simulatorObj.status.set_bit(status_index['P'])
-    s=['MVI A, 23','MVI B,FE','CMP B','HLT']
+    s=['MVI A, 23','MVI B,FE','ADD B','HLT']
 
     obj.starting_address("4000")
 
