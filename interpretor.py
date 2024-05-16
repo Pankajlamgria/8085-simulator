@@ -734,40 +734,40 @@ class interpretor:
 
 # TESTING AREA
 
-obj=interpretor()
-try:
-    obj.simulatorObj.status.set_bit(status_index['C'])  
-    # obj.simulatorObj.status.set_bit(status_index['AC'])
-    # obj.simulatorObj.status.set_bit(status_index['S'])
-    # obj.simulatorObj.status.set_bit(status_index['P'])
-    s=['MVI A, 23','MVI B,FE','ADD B','HLT']
+# obj=interpretor()
+# try:
+#     obj.simulatorObj.status.set_bit(status_index['C'])  
+#     # obj.simulatorObj.status.set_bit(status_index['AC'])
+#     # obj.simulatorObj.status.set_bit(status_index['S'])
+#     # obj.simulatorObj.status.set_bit(status_index['P'])
+#     s=['MVI A, 23','MVI B,FE','ADD B','HLT']
 
-    obj.starting_address("4000")
+#     obj.starting_address("4000")
 
-    for i in s:
-        (obj.decode_insert(i))
-    obj.starting_address("4000")
-    print("running code")
-    obj.execute_Code()
-    print("\nAccumulator:",obj.simulatorObj.register[register_index['A']],end=" ,")
-    print("B Register:",obj.simulatorObj.register[register_index['B']],end=" ,")
-    print("C Register:",obj.simulatorObj.register[register_index['C']],end=' ,')
-    print("D Register:",obj.simulatorObj.register[register_index['D']],end=' ,')
-    print("E Register:",obj.simulatorObj.register[register_index['E']],end=' ,')
-    print("H Register:",obj.simulatorObj.register[register_index['H']],end=' ,')
-    print("L Register:",obj.simulatorObj.register[register_index['L']],)
-    print("\nZero:",obj.simulatorObj.status.get_bit(status_index['Z']),end=' ,')
-    print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']),end=' ,')
-    print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']),end=' ,')
-    print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']),end=' ,')
-    print("AUXILARY CARRY:",obj.simulatorObj.status.get_bit(status_index['AC']))
-    print("\nBC register Pair:",hex(obj.simulatorObj.get_Register_Pair('B')),end=" ,")
-    print("DE register Pair:",hex(obj.simulatorObj.get_Register_Pair('D')),end=" ,")
-    print("HL register Pair:",hex(obj.simulatorObj.get_Register_Pair('H')))
-    print("\nData int  memeory(HL):",obj.simulatorObj.memory[obj.simulatorObj.get_Register_Pair('H')])
-    print("\nprogram counter:",hex(obj.simulatorObj.get_program_Counter()))
-    print("DATA",obj.simulatorObj.memory[obj.simulatorObj.get_program_Counter()])
+#     for i in s:
+#         (obj.decode_insert(i))
+#     obj.starting_address("4000")
+#     print("running code")
+#     obj.execute_Code()
+#     print("\nAccumulator:",obj.simulatorObj.register[register_index['A']],end=" ,")
+#     print("B Register:",obj.simulatorObj.register[register_index['B']],end=" ,")
+#     print("C Register:",obj.simulatorObj.register[register_index['C']],end=' ,')
+#     print("D Register:",obj.simulatorObj.register[register_index['D']],end=' ,')
+#     print("E Register:",obj.simulatorObj.register[register_index['E']],end=' ,')
+#     print("H Register:",obj.simulatorObj.register[register_index['H']],end=' ,')
+#     print("L Register:",obj.simulatorObj.register[register_index['L']],)
+#     print("\nZero:",obj.simulatorObj.status.get_bit(status_index['Z']),end=' ,')
+#     print("SIGN:",obj.simulatorObj.status.get_bit(status_index['S']),end=' ,')
+#     print("CARRY:",obj.simulatorObj.status.get_bit(status_index['C']),end=' ,')
+#     print("PARITY:",obj.simulatorObj.status.get_bit(status_index['P']),end=' ,')
+#     print("AUXILARY CARRY:",obj.simulatorObj.status.get_bit(status_index['AC']))
+#     print("\nBC register Pair:",hex(obj.simulatorObj.get_Register_Pair('B')),end=" ,")
+#     print("DE register Pair:",hex(obj.simulatorObj.get_Register_Pair('D')),end=" ,")
+#     print("HL register Pair:",hex(obj.simulatorObj.get_Register_Pair('H')))
+#     print("\nData int  memeory(HL):",obj.simulatorObj.memory[obj.simulatorObj.get_Register_Pair('H')])
+#     print("\nprogram counter:",hex(obj.simulatorObj.get_program_Counter()))
+#     print("DATA",obj.simulatorObj.memory[obj.simulatorObj.get_program_Counter()])
 
-    print("\ndata at 2000",obj.simulatorObj.memory[int("2000",16)])
-except:
-    print("<---------------------------INVALID CODE PLEASE WRITE THE CORRECT CODE---------------------------->")
+#     print("\ndata at 2000",obj.simulatorObj.memory[int("2000",16)])
+# except:
+#     print("<---------------------------INVALID CODE PLEASE WRITE THE CORRECT CODE---------------------------->")
