@@ -76,3 +76,5 @@ swapped_opcode = {
     '92': 'SUB D', '93': 'SUB E', '94': 'SUB H', '95': 'SUB L', '96': 'SUB M', 'D6': 'SUI', 'EB': 'XCHG', 'AF': 'XRA A', 'A8': 'XRA B', 
     'A9': 'XRA C', 'AA': 'XRA D', 'AB': 'XRA E', 'AC': 'XRA H', 'AD': 'XRA L', 'AE': 'XRA M', 'EE': 'XRI'
     }
+
+
