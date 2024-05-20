@@ -1,4 +1,0 @@
-MVI A, 23
-MVI B,FE
-ADD B
-HLT
