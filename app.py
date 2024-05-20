@@ -16,6 +16,8 @@ class simulator:
 
     def update_Register(self):
         self.registerValues.config(text=str(f"REGISTERS :A={hex(self.interpreterObj.simulatorObj.register[register_index['A']])[2:].upper()} | B={hex(self.interpreterObj.simulatorObj.register[register_index['B']])[2:].upper()}  | C={hex(self.interpreterObj.simulatorObj.register[register_index['C']])[2:].upper()}  | D={hex(self.interpreterObj.simulatorObj.register[register_index['D']])[2:].upper()} | E={hex(self.interpreterObj.simulatorObj.register[register_index['E']])[2:].upper()}  |  H={hex(self.interpreterObj.simulatorObj.register[register_index['H']])[2:].upper()}  |  L={hex(self.interpreterObj.simulatorObj.register[register_index['L']])[2:].upper()}"))
+    def update_Register_Pair(self):
+        self.registerPairValues.config(text=str(f"REGISTER PAIR :     BC  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('B'))[2:].upper()}    |    DE  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('D'))[2:].upper()}    |    HL/M  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('H'))[2:].upper()}"))
     def update_Status(self):
         self.signInput.config(text=f"{self.interpreterObj.simulatorObj.status.get_bit(status_index['S'])}")
         self.zeroInput.config(text=f"{self.interpreterObj.simulatorObj.status.get_bit(status_index['Z'])}")
@@ -45,7 +47,7 @@ class simulator:
         if len(text) > 4:
             self.startingAddInput.delete("1.0", "end")
             self.startingAddInput.insert("1.0", text[:4])
-        
+            
     def handleCompileFunction(self,event):
             if(self.startingAddInput.get('1.0',END).strip()!=''):
                 memAdd=self.startingAddInput.get("1.0",END).strip()
@@ -56,12 +58,15 @@ class simulator:
                     self.interpreterObj.decode_insert(line)
     
     def handleRunFunction(self,event):
-        if(self.startingAddInput.get('1.0',END).strip()!=''):
-            memAdd=self.startingAddInput.get("1.0",END).strip()
-            self.interpreterObj.starting_address(memAdd)
-            self.interpreterObj.execute_Code()
-            self.update_Register()
-            self.update_Status()
+        if(self.memoryAddEntry.get()!=''):
+            if(self.startingAddInput.get('1.0',END).strip()!=''):
+                memAdd=self.startingAddInput.get("1.0",END).strip()
+                self.interpreterObj.starting_address(memAdd)
+                self.interpreterObj.execute_Code()
+                self.update_Register()
+                self.update_Status()
+                self.update_Register_Pair()
+                self.updateMemoryTable(self.searchedMemAddStart)
 
     def updateMemoryTable(self,start):
         dataList=[self.data1,self.data2,self.data3,self.data4,self.data5,self.data6,self.data7,self.data8,self.data9,self.data10,self.data11,self.data12,self.data13,self.data14,self.data15,self.data16]
@@ -93,10 +98,11 @@ class simulator:
             self.updateMemoryTable(self.searchedMemAddStart)
 
     def setStartingMemorytag(self,event):
-        self.searchedMemAddStart=int(self.memoryAddEntry.get(),16)
-        if(not self.MemorySearchFlag):
-            self.MemorySearchFlag=True
-        self.updateMemoryTable(self.searchedMemAddStart)
+        if(self.memoryAddEntry.get()!=''):
+            self.searchedMemAddStart=int(self.memoryAddEntry.get(),16)
+            if(not self.MemorySearchFlag):
+                self.MemorySearchFlag=True
+            self.updateMemoryTable(self.searchedMemAddStart)
     
     def handleUpdateMemory1(self,event):
         add=self.memoryAddress1.cget('text')
@@ -183,6 +189,36 @@ class simulator:
     def validate_data(self,new_value):
         return len(new_value)<=2
 
+    def handleClearStatus(self,event):
+        self.interpreterObj.simulatorObj.status.clear_bit(status_index['S'])
+        self.interpreterObj.simulatorObj.status.clear_bit(status_index['Z'])
+        self.interpreterObj.simulatorObj.status.clear_bit(status_index['AC'])
+        self.interpreterObj.simulatorObj.status.clear_bit(status_index['P'])
+        self.interpreterObj.simulatorObj.status.clear_bit(status_index['C'])
+        for i in range(0,8):
+            self.interpreterObj.simulatorObj.register[i]=0
+        self.update_Register()
+        self.update_Status()
+        self.update_Register_Pair()
+        
+    def handleClearMemory(self,event):
+        for i in range(0,2**16):
+            self.interpreterObj.simulatorObj.memory[i]=0 
+        if(self.MemorySearchFlag):         
+            self.updateMemoryTable(self.searchedMemAddStart)
+    def handleToHexadecimal(self,event):
+        if(self.decimalEntry.get()!=''):
+            intNumber=int(self.decimalEntry.get())
+            hexNumber=hex(intNumber)[2:].upper()
+            self.hexadecimalEntry.delete(0,END)
+            self.hexadecimalEntry.insert(0,f'{hexNumber}')
+    def handleToDecimal(self,event):
+        if(self.hexadecimalEntry.get()!=''):
+            hexNumber=self.hexadecimalEntry.get()
+            intNumber=int(hexNumber,16)
+            self.decimalEntry.delete(0,END)
+            self.decimalEntry.insert(0,f'{intNumber}')
+
 
     def mainWindow(self):
         self.window.title("8085-Simulator")
@@ -193,8 +229,8 @@ class simulator:
         self.startingAddLabel=Label(text="STARTING ADDRESS:",font=('Arial',12),relief="flat")
         self.startingAddLabel.place(rely=.04,relheight=.03)
 
-        self.startingAddInput=Text(font=('Arial', 12),padx=2)
-        self.startingAddInput.place(rely=.04,relx=.13,relheight=.03,relwidth=.06)
+        self.startingAddInput=Text(font=('Arial', 12),padx=8)
+        self.startingAddInput.place(rely=.04,relx=.11,relheight=.03,relwidth=.08)
 
 
         self.compileBtn=Button(self.window,text="Compile",font=
@@ -205,7 +241,7 @@ class simulator:
         self.runBtn.place(rely=.04,relx=.45,relwidth=.05,relheight=.03)
 
         self.validateData=self.window.register(self.validate_data)
-        
+        self.validateADD=self.window.register(self.validate_address)
         
 
         self.textArea=Text(font=('Times', 16),padx=4,pady=4)
@@ -220,9 +256,14 @@ class simulator:
         registerFrame=Frame(self.window,border=1,relief="groove")
         registerFrame.place(rely=.72,relheight=.4,relwidth=.5)
 
+  
 
         self.registerValues=Label(registerFrame,text=f"REGISTERS :A={hex(self.interpreterObj.simulatorObj.register[register_index['A']])[2:].upper()} | B={hex(self.interpreterObj.simulatorObj.register[register_index['B']])[2:].upper()}  | C={hex(self.interpreterObj.simulatorObj.register[register_index['C']])[2:].upper()}  | D={hex(self.interpreterObj.simulatorObj.register[register_index['D']])[2:].upper()} | E={hex(self.interpreterObj.simulatorObj.register[register_index['E']])[2:].upper()}  |  H={hex(self.interpreterObj.simulatorObj.register[register_index['H']])[2:].upper()}  |  L={hex(self.interpreterObj.simulatorObj.register[register_index['L']])[2:].upper()}",font=('Times', 16),border=1,relief='groove',bg="white",padx=12,pady=8)
         self.registerValues.place(x=15,y=5)
+
+        self.ClearSignBtn=Button(registerFrame,text='Clear',borderwidth=1,relief='raised',font=('Arial',14),cursor='hand2')
+        self.ClearSignBtn.place(y=6,relx=.83,relwidth=.15)
+
 
         self.SignFrame=Frame(registerFrame,border=1,relief='ridge',height=50, width=700,pady=10)
         self.SignFrame.place(relheight='.5',relwidth=.96,relx=.02,rely=.16)
@@ -273,7 +314,6 @@ class simulator:
         memoryAddLabel=Label(self.rightFrame,text="Starting Address:",font=('Times',16),relief="ridge")
         memoryAddLabel.place(rely=.07,relheight=.06,relwidth=.25)
 
-        self.validateADD=self.window.register(self.validate_address)
 
         self.memoryAddEntry=Entry(self.rightFrame,font=('Times',16),borderwidth=1,relief='ridge',justify='center',validate='key',validatecommand=(self.validateADD,'%P'))
         self.memoryAddEntry.place(rely=.07,relx=.25,relheight=.06,relwidth=.18)
@@ -281,7 +321,8 @@ class simulator:
         self.searchBtn=Button(self.rightFrame,text="FIND",font=('Arial',14),cursor='hand2',borderwidth=1,relief='ridge')
         self.searchBtn.place(rely=.07,relx=.43,relheight=.06,relwidth=.1)
 
-        
+        self.clearMemoryBtn=Button(self.rightFrame,text="CLEAR MEMORY",borderwidth=1,relief='raised',font=('Arial',12),cursor='hand2')
+        self.clearMemoryBtn.place(rely=.07,relx=.77,relheight=.06,relwidth=.22)
 
         self.memoryAddTableFrame=Frame(self.rightFrame,borderwidth=1,relief='ridge')
         self.memoryAddTableFrame.place(rely=.13,relwidth=1,relheight=.7)
@@ -381,6 +422,28 @@ class simulator:
         self.nextBtn=Button(self.memoryAddTableFrame,text="NEXT",font=('Arial',14),cursor='hand2',borderwidth=1,relief='ridge')
         self.nextBtn.place(rely=.89,relx=.86,relheight=.08,relwidth=.1)
 
+        self.registerPairFrame=Frame(self.rightFrame,borderwidth=1,relief='groove')
+        self.registerPairFrame.place(rely=.83,relwidth=1,relheight=.17)
+
+        self.registerPairValues=Label(self.registerPairFrame,text=f"REGISTER PAIR :     BC  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('B'))[2:].upper()}    |    DE  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('D'))[2:].upper()}    |    HL/M  =  {hex(self.interpreterObj.simulatorObj.get_Register_Pair('H'))[2:].upper()}",font=('Time',16),borderwidth=1,relief='groove',bg='white',padx=12,pady=8)
+        self.registerPairValues.place(relx=.01,rely=.05)
+
+        horLine=Label(self.registerPairFrame,bg='black')
+        horLine.place(rely=.43,relwidth=1,relheight=.015)
+
+        self.hexadecimalEntry=Entry(self.registerPairFrame,font=('Times',16),borderwidth=1,relief="ridge",justify='center')
+        self.hexadecimalEntry.place(rely=.5,relx=.01,relwidth=.2,relheight=.3)
+        self.toDecimalBtn=Button(self.registerPairFrame,text="To Dec ⇒",font=("Times",16),borderwidth=1,relief='ridge',cursor='hand2')
+        self.toDecimalBtn.place(rely=.5,relx=.21,relwidth=.2,relheight=.3)
+        
+        equalLabel=Label(self.registerPairFrame,text="⇆",font=('Times',20,'bold'),justify='center')
+        equalLabel.place(rely=.5,relx=.41,relwidth=.09,relheight=.3)
+
+        self.toHexadecimalBtn=Button(self.registerPairFrame,text="⇐ To Hex",font=("Times",16),borderwidth=1,relief='ridge',cursor='hand2')
+        self.toHexadecimalBtn.place(rely=.5,relx=.5,relwidth=.2,relheight=.3)
+        self.decimalEntry=Entry(self.registerPairFrame,font=('Times',16),borderwidth=1,relief="ridge",justify='center')
+        self.decimalEntry.place(rely=.5,relx=.7,relwidth=.2,relheight=.3)
+
 
 
 
@@ -398,6 +461,7 @@ class simulator:
         self.carryBtn.bind('<Button-1>',self.setCarry)
 
         self.searchBtn.bind("<Button-1>",self.setStartingMemorytag)
+        self.startingAddInput.bind('<Return>',self.setStartingMemorytag)
         self.nextBtn.bind("<Button-1>",self.handleNextMemoryShow)
         self.prevBtn.bind("<Button-1>",self.handlePrevMemoryShow)
 
@@ -417,6 +481,13 @@ class simulator:
         self.data14.bind("<Return>",self.handleUpdateMemory14)
         self.data15.bind("<Return>",self.handleUpdateMemory15)
         self.data16.bind("<Return>",self.handleUpdateMemory16)
+    
+        self.ClearSignBtn.bind('<Button-1>',self.handleClearStatus)
+        self.clearMemoryBtn.bind('<Button-1>',self.handleClearMemory)
+
+        self.toHexadecimalBtn.bind('<Button-1>',self.handleToHexadecimal)
+        self.toDecimalBtn.bind('<Button-1>',self.handleToDecimal)
+
 
 try:
     app=simulator()

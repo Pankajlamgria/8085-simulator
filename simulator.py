@@ -46,7 +46,7 @@ class processor_8085:
         self.status=bit()
         self.register=bytearray(9)  #All the 6 general purpose register + 1 Accumulator + 1 temp register + 1 instruction register  
         self.program_Counter=bytearray(2)
-
+        
 
         self.stack_Pointer=bytearray(2)
         self.stack_Pointer[0],self.stack_Pointer[1]=int('ff',16),int("ff",16)
