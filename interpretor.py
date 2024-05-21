@@ -10,6 +10,8 @@ class interpretor:
         self.simulatorObj.set_program_Counter(add)
 
     def decode_insert(self,instruction):
+        instruction=instruction.strip()
+
         if(',' in instruction):
             ind=instruction.find(',')
             if(instruction[ind+1]!=' '):
@@ -72,7 +74,7 @@ class interpretor:
                 pc+=1
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
-            elif(inst_arr[0]=='SHLD' or inst_arr[0]=='STA'):
+            elif(inst_arr[0]=='SHLD' or inst_arr[0]=='STA',):
                 self.simulatorObj.memory[pc]=int(oppcode[inst_arr[0]],16)
                 pc+=1
                 self.simulatorObj.to_insert_hexaDecimal_Memory(pc,int(inst_arr[1],16))
@@ -86,6 +88,8 @@ class interpretor:
                 pc+=1
                 self.simulatorObj.set_program_Counter(pc)
                 return pc
+           
+
             
     def extract_add(self,pc):
 
@@ -566,7 +570,6 @@ class interpretor:
         pc+=1
         add=self.extract_add(pc)
         l=self.simulatorObj.get_Register('L')
-        print("DATa of L:",l)
         self.simulatorObj.memory[add]=l
         add+=1
         h=self.simulatorObj.get_Register('H')
@@ -576,7 +579,18 @@ class interpretor:
         add=self.extract_add(pc)
         acc_data=self.simulatorObj.register[register_index['A']]
         self.simulatorObj.memory[add]=acc_data
-
+    def executeLDAX(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:4]
+        regPairName=register_pairs[regCode]
+        regPairData=self.simulatorObj.get_Register_Pair(regPairName)
+        self.simulatorObj.register[register_index['A']]=self.simulatorObj.memory[regPairData]
+    def executeSTAX(self,int_Code):
+        binNumber=str(bin(int_Code)[2:]).zfill(8)
+        regCode=binNumber[2:4]
+        regPairName=register_pairs[regCode]
+        regPairData=self.simulatorObj.get_Register_Pair(regPairName)
+        self.simulatorObj.memory[regPairData]=self.simulatorObj.register[register_index['A']]
     #RUNNING THE CODE 
     def execute_Code(self):
         pc=self.simulatorObj.get_program_Counter()
@@ -724,7 +738,17 @@ class interpretor:
                 self.executeSTA(pc)
                 pc+=3
                 self.simulatorObj.set_program_Counter(pc)
-            
+            elif(command_type=='LDAX'):
+                self.executeLDAX(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+            elif(command_type=='STAX'):
+                self.executeSTAX(self.simulatorObj.memory[pc])
+                pc+=1
+                self.simulatorObj.set_program_Counter(pc)
+
+
+
             pc=self.simulatorObj.get_program_Counter()
 
 

@@ -55,6 +55,7 @@ class simulator:
                 self.interpreterObj.starting_address(memAdd)
                 code=self.textArea.get('1.0',END).strip()
                 linesOfCode=code.splitlines()
+                linesOfCode = [item for item in linesOfCode if item != ""]
                 for line in linesOfCode:
                     self.interpreterObj.decode_insert(line)
     
@@ -66,7 +67,7 @@ class simulator:
                 self.update_Register()
                 self.update_Status()
                 self.update_Register_Pair()
-                if(self.startingAddInput.get()!=''):
+                if(self.memoryAddEntry.get()!=''):
                     self.updateMemoryTable(self.searchedMemAddStart)
 
     def updateMemoryTable(self,start):
@@ -109,86 +110,123 @@ class simulator:
         add=self.memoryAddress1.cget('text')
         if(add!=''):
             data=self.data1.get()
-            self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
+            if(data[0]!='-'):
+                self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
+            else:
+                absNumber=abs(int(data,16))
+                twoscomp=self.interpreterObj.simulatorObj.twos_comp(absNumber,8)
+                self.interpreterObj.simulatorObj.memory[int(add,16)]=twoscomp
+
+
     def handleUpdateMemory2(self,event):
         add=self.memoryAddress2.cget('text')
         if(add!=''):
             data=self.data2.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory3(self,event):
         add=self.memoryAddress3.cget('text')
         if(add!=''):
             data=self.data3.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory4(self,event):
         add=self.memoryAddress4.cget('text')
         if(add!=''):
             data=self.data4.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory5(self,event):
         add=self.memoryAddress5.cget('text')
         if(add!=''):
             data=self.data5.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory6(self,event):
         add=self.memoryAddress6.cget('text')
         if(add!=''):
             data=self.data6.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory7(self,event):
         add=self.memoryAddress7.cget('text')
         if(add!=''):
             data=self.data7.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory8(self,event):
         add=self.memoryAddress8.cget('text')
         if(add!=''):
             data=self.data8.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory9(self,event):
         add=self.memoryAddress9.cget('text')
         if(add!=''):
             data=self.data9.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory10(self,event):
         add=self.memoryAddress10.cget('text')
         if(add!=''):
             data=self.data10.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory11(self,event):
         add=self.memoryAddress11.cget('text')
         if(add!=''):
             data=self.data11.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory12(self,event):
         add=self.memoryAddress12.cget('text')
         if(add!=''):
             data=self.data12.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory13(self,event):
         add=self.memoryAddress13.cget('text')
         if(add!=''):
             data=self.data13.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory14(self,event):
         add=self.memoryAddress14.cget('text')
         if(add!=''):
             data=self.data14.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory15(self,event):
         add=self.memoryAddress15.cget('text')
         if(add!=''):
             data=self.data15.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def handleUpdateMemory16(self,event):
         add=self.memoryAddress16.cget('text')
         if(add!=''):
             data=self.data16.get()
+            if(data[0]=='-'):
+                data=hex(self.interpreterObj.simulatorObj.twos_comp(abs(int(data,16)),8))[2:]
             self.interpreterObj.simulatorObj.memory[int(add,16)]=int(data,16)
     def validate_address(self,new_value):
         return len(new_value)<=4
     def validate_data(self,new_value):
-        return len(new_value)<=2
+        return len(new_value)<=3
 
     def handleClearStatus(self,event):
         self.interpreterObj.simulatorObj.status.clear_bit(status_index['S'])
